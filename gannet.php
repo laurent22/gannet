@@ -14,7 +14,7 @@ function Gannet_logWarn($s) {
 	Gannet_log('[WARN] ' . $s); 
 }
 
-class Gannet_DatabaseMigrationConfig {
+class Gannet_Config {
 
 	private $data_ = array();
 
@@ -27,18 +27,10 @@ class Gannet_DatabaseMigrationConfig {
 	
 	public function toPdoConnectionString() {
 		$s = '';
-		$username = null;
-		$password = null;
 		foreach ($this->data_['connection'] as $k => $v) {
 			if ($v === false) continue;
-			if ($k == 'username') {
-				$username = $v;
-				continue;
-			}
-			if ($k == 'password') {
-				$password = $v;
-				continue;
-			}
+			if ($k == 'username') continue;
+			if ($k == 'password') continue;
 			if ($k == 'database') $k = 'dbname';
 			if ($k == 'hostname') $k = 'host';
 			if ($s != '') $s .= ';';
@@ -64,7 +56,7 @@ class Gannet_DatabaseMigrationConfig {
 	
 }
 
-class Gannet_DatabaseMigration {
+class Gannet {
 	
 	private $db_ = null;
 	private $config_ = null;
@@ -222,7 +214,7 @@ $configFilePath = realpath($configFilePath);
 require_once "Toml.php";
 if (!file_exists($configFilePath)) throw new Exception('Config file does not exist: ' . $configFilePath);
 Gannet_log("Using config at " . $configFilePath);
-$config = new Gannet_DatabaseMigrationConfig(Toml::parseFile($configFilePath));
+$config = new Gannet_Config(Toml::parseFile($configFilePath));
 
 /**
  * Check script folder
@@ -244,7 +236,7 @@ Gannet_log("Using script folder: " . $scriptFolder);
  * Initialize migration object
  */
 
-$gannet = new Gannet_DatabaseMigration($config);
+$gannet = new Gannet($config);
 set_error_handler(array($gannet, 'phpErrorHandler'));
 register_shutdown_function(array($gannet, 'onShutdown'));
 $gannet->dbConnect();
