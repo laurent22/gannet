@@ -1,8 +1,8 @@
-# A database migration tool in PHP
+# Gannet - A database migration tool in PHP
 
 This is a database migration tool that manages and runs a set of migration scripts.
 
-For more flexibility, the library doesn't force you to write your migration scripts in any particular language. It simply ensures that they are being executed in the correct order and that the database is up to date. What the individual script files do is up to you.
+For more flexibility, the library does not force you to write your migration scripts in any particular language. It simply ensures that they are being executed in the correct order and that the database is up to date. What the individual script files do is up to you.
 
 Although it is in PHP it can in fact work with any database or server as long as the PHP command line is installed.
 
@@ -12,7 +12,7 @@ The library requires a migration table (called `dbmigrations` by default) which 
 
 You then add the migration scripts (usually SQL files) to the `scripts` folder. Each file should be named like the target version (eg. "1.1.sql", "1.2.0.sql", etc.).
 
-When run, the migration script then looks in this folder and run any script that is above the current version. Once done, the migration table is updated with the new version number.
+When run, the Gannet looks in this folder and run any script that is above the current version. Once done, the migration table is updated with the new version number.
 
 # Usage
 
@@ -24,14 +24,14 @@ When run, the migration script then looks in this folder and run any script that
 
 * Add the migration scripts to the `scripts` folder. They should be named like the target database version - eg. "1.1.sql", "1.1.0.sql", etc. Version numbers can have up to three digits (x.x.x).
 
-* You can then run the migration tool - `php migrate.php`
+* You can then run the migration tool - `php gannet.php`
 
 # Command line parameters
 
 Optionally, the script can take a path to a configuration file as a parameter. This allows having different configuration for different environments. For example:
 
-	php migration.php config/config.local.toml
-	php migration.php config/config.live.toml
+	php gannet.php config/config.local.toml
+	php gannet.php config/config.live.toml
 
 # Advanced usage
 
