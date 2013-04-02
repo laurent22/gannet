@@ -172,14 +172,14 @@ class Gannet_DatabaseMigration {
 		$cmd = str_replace('{{file}}', $path, $cmd);
 		Gannet_log('Running command: ' . $cmd);
 		exec($cmd, $output, $errorCode);
-		Gannet_log('Error code: ' . $errorCode);
+		$good = $this->config_->get('commands.' . $type . '.success_code');
+		$errorCodeOk = $good === null ? true : $errorCode == $good;
+		Gannet_log('Error code: ' . $errorCode . ' [' . ($errorCodeOk ? 'OK' : 'ERROR') . ']');
 		if (count($output)) {
 			echo implode("\n", $output);
 			echo "\n";
 		}
-		$good = $this->config_->get('commands.' . $type . '.success_code');
-		if ($good !== null) return $errorCode == $good;
-		return true;
+		return $errorCodeOk;
 	}
 	
 	public function phpErrorHandler($errno, $errstr, $errfile, $errline) {
@@ -208,10 +208,12 @@ if (!isset($_SERVER['argv'])) {
 
 if (count($argv) >= 2) {
 	$configFilePath = $argv[1];
-	if (strpos($configFilePath, '.') === 0) $configFilePath = dirname(__FILE__) . $configFilePath;
+	if (strpos($configFilePath, '.') === 0) $configFilePath = dirname(__FILE__) . '/' . $configFilePath;
 } else {
 	$configFilePath = dirname(__FILE__) . '/config/config.toml';	
 }
+
+$configFilePath = realpath($configFilePath);
 
 /**
  * Initialize configuration
@@ -223,6 +225,22 @@ Gannet_log("Using config at " . $configFilePath);
 $config = new Gannet_DatabaseMigrationConfig(Toml::parseFile($configFilePath));
 
 /**
+ * Check script folder
+ */
+ 
+$scriptFolder = dirname(__FILE__) . '/scripts/';
+if ($config->get('script_path')) {
+	$scriptFolder = $config->get('script_path');
+	if (strpos($scriptFolder, '.') === 0) $scriptFolder = dirname(__FILE__) . '/' . $scriptFolder;
+}
+
+if (!strlen($scriptFolder)) throw new Exception('Script folder path is an empty string.');
+$scriptFolder = realpath($scriptFolder);
+if ($scriptFolder[strlen($scriptFolder) - 1] != '/') $scriptFolder .= '/';
+if (!is_dir($scriptFolder)) throw new Exception('Script folder does not exist or is not a directory: ' . $scriptFolder);
+Gannet_log("Using script folder: " . $scriptFolder);
+	
+/**
  * Initialize migration object
  */
 
@@ -231,7 +249,7 @@ set_error_handler(array($gannet, 'phpErrorHandler'));
 register_shutdown_function(array($gannet, 'onShutdown'));
 $gannet->dbConnect();
 $gannet->dbCheckMigrationTable();
-$versions = $gannet->versionFiles(dirname(__FILE__) . '/scripts/');
+$versions = $gannet->versionFiles($scriptFolder);
 $currentVersion = $gannet->dbCurrentVersion();
 
 /**
