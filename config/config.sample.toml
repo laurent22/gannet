@@ -1,0 +1,65 @@
+# The type of database to be upgraded - can be any type supported by PDO
+type = "mysql"
+
+# Any charset supported by the database
+charset = "utf8"
+
+# If this is set to `false`, the migration will continue even in case of error.
+stop_on_error = true
+
+# Name of the table containing the migration information. See config/migration_table.sql
+migration_table_name = "dbmigrations"
+
+# Path to the folder that contains the script files. Can be an absolute or relative path.
+# If it is a relative path, it is relative to `gannet.php`.
+script_path = "./scripts"
+
+#
+# In this section, define the database connection information 
+#
+
+[connection]
+hostname = "localhost"
+database = "sample"
+username = "root"
+password = false
+persistent = false
+
+#
+# Below define the command line for SQL and any other required
+# tool. The format is as follow:
+#
+# [command.FILE_EXTENSION]
+# command = "/path/to/executable"
+# success_code = ERROR_CODE_ON_SUCCESS
+#
+# For example, for PHP:
+#
+# [commands.php]
+# command = "/opt/lampp/bin/php-cgi \"{{file}}\" 2>&1"
+# success_code = 0
+#
+# For go:
+#
+# [commands.go]
+# command = "go run \"{{file}}\" 2>&1"
+# success_code = 0
+#
+# Any command line tool can be added in this fashion.
+#
+# Config parameters can be inserted using the {{}} notation.
+# Supported config parameters are:
+# {{connection.username}}
+# {{connection.database}}
+# {{connection.password}}
+# {{connection.hostname}}
+# {{file}} - current migration file being processed
+#
+
+[commands.sql]
+command = "mysql --user={{connection.username}} {{connection.database}} < \"{{file}}\" 2>&1"
+success_code = 0
+
+[commands.php]
+command = "php \"{{file}}\" 2>&1"
+success_code = 0
