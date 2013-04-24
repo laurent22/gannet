@@ -1,6 +1,7 @@
 <?php
 
 error_reporting(E_ALL | E_STRICT);
+date_default_timezone_set('EST');
 
 function Gannet_log($s) {
 	echo '[Migration] ' . $s . "\n";
@@ -215,6 +216,8 @@ require_once "Toml.php";
 if (!file_exists($configFilePath)) throw new Exception('Config file does not exist: ' . $configFilePath);
 Gannet_log("Using config at " . $configFilePath);
 $config = new Gannet_Config(Toml::parseFile($configFilePath));
+
+date_default_timezone_set($config->get('timezone'));
 
 /**
  * Check script folder

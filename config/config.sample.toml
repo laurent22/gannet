@@ -1,3 +1,6 @@
+# Default time zone
+timezone = "EST"
+
 # The type of database to be upgraded - can be any type supported by PDO
 type = "mysql"
 
