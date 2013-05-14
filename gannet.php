@@ -118,7 +118,7 @@ class Gannet {
 		try {
 			$this->db_->query('SELECT 1 FROM ' . $tableName . ' LIMIT 1');
 		} catch (Exception $e) {
-			Gannet_logError('Table ' . $tableName . ' does not exist or is not readable: ' . $e->getMessage());
+			Gannet_logError('Table ' . $tableName . ' does not exist or is not readable: ' . $e->getMessage() . '. You can create it using "config/migration_table.sql".');
 			$this->onError();
 		}
 	}
