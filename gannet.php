@@ -15,6 +15,24 @@ function Gannet_logWarn($s) {
 	Gannet_log('[WARN] ' . $s); 
 }
 
+function Gannet_findFile($file) {
+	if (file_exists($file)) return realpath($file);
+	
+	$output = null;
+	if (strpos($file, '.') === 0) $output = dirname(__FILE__) . '/' . $file;
+	if ($output && file_exists($output)) return realpath($output);
+	
+	$output = getcwd() . '/' . $file;
+	if (file_exists($output)) return realpath($output);
+	
+	if (isset($_SERVER['PWD'])) {
+		$output = $_SERVER['PWD'] . '/' . $file;
+		if (file_exists($output)) return realpath($output);
+	}
+	
+	return false;
+}
+
 class Gannet_Config {
 
 	private $data_ = array();
@@ -201,19 +219,19 @@ if (!isset($_SERVER['argv'])) {
 
 if (count($argv) >= 2) {
 	$configFilePath = $argv[1];
-	if (strpos($configFilePath, '.') === 0) $configFilePath = dirname(__FILE__) . '/' . $configFilePath;
 } else {
 	$configFilePath = dirname(__FILE__) . '/config/config.toml';	
 }
 
-$configFilePath = realpath($configFilePath);
+$check = Gannet_findFile($configFilePath);
+if (!$check || !file_exists($check)) throw new Exception('Could not find config file: ' . $configFilePath);
+$configFilePath = $check;
 
 /**
  * Initialize configuration
  */
 
 require_once "Toml.php";
-if (!file_exists($configFilePath)) throw new Exception('Config file does not exist: ' . $configFilePath);
 Gannet_log("Using config at " . $configFilePath);
 $config = new Gannet_Config(Toml::parseFile($configFilePath));
 
