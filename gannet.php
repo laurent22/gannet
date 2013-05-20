@@ -235,7 +235,8 @@ require_once "Toml.php";
 Gannet_log("Using config at " . $configFilePath);
 $config = new Gannet_Config(Toml::parseFile($configFilePath));
 
-date_default_timezone_set($config->get('timezone'));
+$timezone = $config->get('timezone');
+if (!empty($timezone)) date_default_timezone_set($timezone);
 
 /**
  * Check script folder
