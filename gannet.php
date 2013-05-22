@@ -81,18 +81,41 @@ class Gannet {
 	private function sort_versionFiles($a, $b) {
 		return $this->version_compare($a['version'], $b['version']);
 	}
+	
+	public function metaFiles($scriptFolder) {
+		$output = array();
+		foreach (glob($scriptFolder . "*.*") as $filePath) {
+			$p = pathinfo($filePath);
+			$n = $p['filename'];
+			if ($n != 'after' && $n != 'before') continue;
+			$ext = $p['extension'];
+			if (isset($output[$n])) {
+				Gannet_logWarn('Skipping duplicate meta file: ' . $filePath);
+				continue;
+			}		
+			$output[$n] = array(
+				'path' => $filePath,
+				'type' => $ext
+			);
+		}
+		return $output;
+	}
 
 	public function versionFiles($scriptFolder) {
 		$temp = array();
 		foreach (glob($scriptFolder . "*.*") as $filePath) {
 			$p = pathinfo($filePath);
 			$v = $p['filename'];
+			if ($v == 'after' || $v == 'before') continue;
 			$ext = $p['extension'];
 			if (isset($temp[$v])) {
 				Gannet_logWarn('Skipping duplicate version file: ' . $filePath);
 				continue;
 			}
-			$temp[$v] = array('path' => $filePath, 'type' => $ext);
+			$temp[$v] = array(
+				'path' => $filePath,
+				'type' => $ext
+			);
 		}
 		$output = array();
 		foreach ($temp as $v => $d) {
@@ -201,9 +224,9 @@ if (!isset($_SERVER['argv'])) {
 
 if (count($argv) >= 2) {
 	$configFilePath = $argv[1];
-	if (strpos($configFilePath, '.') === 0) $configFilePath = dirname(__FILE__) . '/' . $configFilePath;
+	if (strpos($configFilePath, '.') === 0) $configFilePath = dirname(__FILE__) . DIRECTORY_SEPARATOR . $configFilePath;
 } else {
-	$configFilePath = dirname(__FILE__) . '/config/config.toml';	
+	$configFilePath = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'config.toml';	
 }
 
 $configFilePath = realpath($configFilePath);
@@ -223,15 +246,15 @@ date_default_timezone_set($config->get('timezone'));
  * Check script folder
  */
  
-$scriptFolder = dirname(__FILE__) . '/scripts/';
+$scriptFolder = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR;
 if ($config->get('script_path')) {
 	$scriptFolder = $config->get('script_path');
-	if (strpos($scriptFolder, '.') === 0) $scriptFolder = dirname(__FILE__) . '/' . $scriptFolder;
+	if (strpos($scriptFolder, '.') === 0) $scriptFolder = dirname(__FILE__) . DIRECTORY_SEPARATOR . $scriptFolder;
 }
 
 if (!strlen($scriptFolder)) throw new Exception('Script folder path is an empty string.');
 $scriptFolder = realpath($scriptFolder);
-if ($scriptFolder[strlen($scriptFolder) - 1] != '/') $scriptFolder .= '/';
+if ($scriptFolder[strlen($scriptFolder) - 1] != DIRECTORY_SEPARATOR) $scriptFolder .= DIRECTORY_SEPARATOR;
 if (!is_dir($scriptFolder)) throw new Exception('Script folder does not exist or is not a directory: ' . $scriptFolder);
 Gannet_log("Using script folder: " . $scriptFolder);
 	
@@ -245,12 +268,15 @@ register_shutdown_function(array($gannet, 'onShutdown'));
 $gannet->dbConnect();
 $gannet->dbCheckMigrationTable();
 $versions = $gannet->versionFiles($scriptFolder);
+$metaFiles = $gannet->metaFiles($scriptFolder);
 $currentVersion = $gannet->dbCurrentVersion();
 
 /**
  * Upgrade the database
  */
 
+$isFirstFile = true;
+$hasDoneSomething = false;
 while (true) {
 	$nextVersion = $gannet->dbNextVersion($currentVersion, $versions);
 
@@ -258,10 +284,34 @@ while (true) {
 	Gannet_log('Next version: ' . ($nextVersion ? $nextVersion['version'] : 'none'));
 	if (!$nextVersion) break;
 	
+	if ($isFirstFile) {
+		if (isset($metaFiles['before'])) {
+			$f = $metaFiles['before'];
+			Gannet_log('Running: ' . $f['path']);
+			$ok = $gannet->runCommand($f['type'], $f['path']);
+			if (!$ok) $gannet->onError();
+		}
+		$isFirstFile = false;
+	}
+	
 	Gannet_log('Running: ' . $nextVersion['path']);
 	$ok = $gannet->runCommand($nextVersion['type'], $nextVersion['path']);
 	if (!$ok) $gannet->onError();
 	
+	$hasDoneSomething = true;
 	$currentVersion = $nextVersion['version'];
 	$gannet->dbSaveVersionInfo($currentVersion);
+}
+
+/*
+ * Run the "after" script, if any
+ */
+
+if ($hasDoneSomething) {
+	if (isset($metaFiles['after'])) {
+		$f = $metaFiles['after'];
+		Gannet_log('Running: ' . $f['path']);
+		$ok = $gannet->runCommand($f['type'], $f['path']);
+		if (!$ok) $gannet->onError();
+	}
 }
