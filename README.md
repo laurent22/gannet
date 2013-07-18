@@ -4,7 +4,7 @@ This is a database migration tool that manages and runs a set of migration scrip
 
 For more flexibility, the library does not force you to write your migration scripts in any particular language. It simply ensures that they are being executed in the correct order and that the database is up to date. What the individual script files do is up to you.
 
-Although it is in PHP it can in fact work with any database or server as long as the PHP command line is installed.
+Although it is in PHP it can in fact work with any database or server as long as the PHP executable is installed.
 
 # How does it work?
 
