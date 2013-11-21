@@ -1,5 +1,7 @@
 <?php
 
+define('BASE_DIR', dirname(__FILE__));
+
 error_reporting(E_ALL | E_STRICT);
 date_default_timezone_set('EST');
 
@@ -44,13 +46,13 @@ class Gannet_Config {
 		$this->data_ = $data;
 	}
 	
-	public function toPdoConnectionString() {
+	public function toPdoConnectionString($includeDatabaseName = true) {
 		$s = '';
 		foreach ($this->data_['connection'] as $k => $v) {
 			if ($v === false) continue;
 			if ($k == 'username') continue;
 			if ($k == 'password') continue;
-			if ($k == 'database') $k = 'dbname';
+			if ($k == 'database' && $includeDatabaseName) $k = 'dbname';
 			if ($k == 'hostname') $k = 'host';
 			if ($s != '') $s .= ';';
 			$s .= $k . '=' . $v;
@@ -145,22 +147,62 @@ class Gannet {
 	}
 	
 	public function dbConnect() {
-		$this->db_ = new PDO(
-			$this->config_->toPdoConnectionString(),
-			$this->config_->get('connection.username'),
-			$this->config_->get('connection.password'),
-			array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
-		);
+		Gannet_log('Connecting to database...');
+		
+		$triedToCreateDb = false;
+		while (true) {
+			try {
+				$this->db_ = new PDO(
+					$this->config_->toPdoConnectionString(),
+					$this->config_->get('connection.username'),
+					$this->config_->get('connection.password'),
+					array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+				);
+				Gannet_log('Connection successful.');
+				break;
+			} catch (Exception $e) {
+				// TODO: check if this is a generic error code or specific to MySQL
+				if ($e->getCode() == 1049 && !$triedToCreateDb) {
+					$triedToCreateDb = true;
+					Gannet_log('Database does not exist - creating it.');
+					$this->db_ = new PDO(
+						$this->config_->toPdoConnectionString(false),
+						$this->config_->get('connection.username'),
+						$this->config_->get('connection.password'),
+						array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+					);
+					$this->db_->query('CREATE DATABASE ' . $this->config_->get('connection.database'));
+				} else {
+					Gannet_logError('Could not connect to database: ' . $e->getMessage());
+					$this->onError();
+					break;
+				}
+			}
+		}
 	}
 	
 	public function dbCheckMigrationTable() {
 		$tableName = $this->config_->get('migration_table_name');
-		Gannet_log('Checking if "' . $tableName . '" table exists...');
-		try {
-			$this->db_->query('SELECT 1 FROM ' . $tableName . ' LIMIT 1');
-		} catch (Exception $e) {
-			Gannet_logError('Table ' . $tableName . ' does not exist or is not readable: ' . $e->getMessage() . '. You can create it using "config/migration_table.sql".');
-			$this->onError();
+		
+		$triedToCreateTable = false;
+		while (true) {
+			Gannet_log('Checking if "' . $tableName . '" table exists...');
+			try {
+				$this->db_->query('SELECT 1 FROM ' . $tableName . ' LIMIT 1');
+				break;
+			} catch (Exception $e) {
+				if (!$triedToCreateTable) {
+					// TODO: migration_table.sql has the table name hard-coded so won't make use of config value 'migration_table_name'
+					$triedToCreateTable = true;
+					Gannet_log('Migration table does not exist. Trying to create it...');
+					$this->runCommand('sql', BASE_DIR . DIRECTORY_SEPARATOR . 'config/migration_table.sql');
+				} else {
+					Gannet_logError('Table ' . $tableName . ' does not exist or is not readable: ' . $e->getMessage());
+					Gannet_logError('You can create it using "config/migration_table.sql".');
+					$this->onError();
+					break;
+				}
+			}
 		}
 	}
 	
@@ -217,7 +259,6 @@ class Gannet {
 	}
 	
 	public function phpErrorHandler($errno, $errstr, $errfile, $errline) {
-		if (!(error_reporting() & $errno)) return;
 		Gannet_logError($errno . ': ' . $errstr . ' in ' . $errfile . ':' . $errline);
 		$this->onError();
 		return true;
