@@ -69,3 +69,7 @@ If more than one script file must be run for a given database upgrade, you can s
 ## Error handling
 
 By default, the migration process will stop whenever an error happens in any of the migration scripts. To specify the error code for a given command line, use the `success_code` parameter. See [config.sample.toml](config/config.sample.toml) for more details.
+
+## TODO
+
+- Add support for rollback?
