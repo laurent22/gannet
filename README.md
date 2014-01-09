@@ -35,6 +35,17 @@ Optionally, the script can take a path to a configuration file as a parameter. T
 
 # Advanced usage
 
+## Accessing config variables from scripts
+
+Before running any script, Gannet set some environment variables based on the current configuration file. The variables currently being set are:
+
+	GANNET_CONNECTION_USERNAME
+	GANNET_CONNECTION_PASSWORD
+	GANNET_CONNECTION_HOSTNAME
+	GANNET_CONNECTION_DATABASE
+
+which correpond to the variables under the "[connection]" section of the config file (usually these are the only needed variables). They can then be accessed using whatever feature your scripting language provide. For example, `getenv('GANNET_CONNECTION_USERNAME')` to get the database username in PHP.
+
 ## Running any script file
 
 Usually, the database upgrade will be done by running SQL files. For more complex migrations, you can also run any other script file. To do so, add a new `[command.xxx]` section to `config.toml`, where `xxx` is the file extension (for example "go", "php", "sh", etc.). You then define the command line to run this script file using the `command` parameter. For example, below is how you would run PHP or Go scripts:

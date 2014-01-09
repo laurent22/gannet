@@ -247,6 +247,10 @@ class Gannet {
 		$cmd = str_replace('{{connection.database}}', $this->config_->get('connection.database'), $cmd);
 		$cmd = str_replace('{{file}}', $path, $cmd);
 		Gannet_log('Running command: ' . $cmd);
+		putenv("GANNET_CONNECTION_USERNAME=" . $this->config_->get('connection.username'));
+		putenv("GANNET_CONNECTION_PASSWORD=" . $this->config_->get('connection.password'));
+		putenv("GANNET_CONNECTION_HOSTNAME=" . $this->config_->get('connection.hostname'));
+		putenv("GANNET_CONNECTION_DATABASE=" . $this->config_->get('connection.database'));
 		exec($cmd, $output, $errorCode);
 		$good = $this->config_->get('commands.' . $type . '.success_code');
 		$errorCodeOk = $good === null ? true : $errorCode == $good;
