@@ -2,7 +2,7 @@
 
 This is a database migration tool that manages and runs a set of migration scripts.
 
-For more flexibility, the library does not force you to write your migration scripts in any particular language. It simply ensures that they are being executed in the correct order and that the database is up to date. What the individual script files do is up to you.
+For more flexibility, the library does not force you to write your migration scripts in any particular language, nor does it require you to learn a new set of instructions just for this. It simply ensures that the files are being executed in the correct order and that the database is up to date. What the individual script files do is up to you.
 
 Although it is in PHP it can in fact work with any database or server as long as the PHP executable is installed.
 
@@ -48,7 +48,7 @@ which correpond to the variables under the "[connection]" section of the config 
 
 ## Running 'before' and 'after' scripts
 
-You may automatically run a script before and after running the migration by specifying a 'before' and 'after' script. The file extension doesn't matter so it can be named 'before.php', 'before.py', etc. The 'before' can be useful, for example, to put the site in maintainance mode while running the migration. The 'after' one could be used to clear cache or other cleaning tasks.
+You may automatically run a script before and after running the migration by specifying a 'before' and 'after' script. The file extension doesn't matter so it can be named 'before.php', 'before.py', etc. The 'before' script can be useful, for example, to put the site in maintainance mode while running the migration. The 'after' one could be used to clear cache or other cleaning tasks.
 
 ## Running any script file
 
